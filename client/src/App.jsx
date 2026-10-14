@@ -1,7 +1,7 @@
 import React from "react";    
 import { useEffect, useState } from "react";
 
-const API_URL = "http://localhost:4000/api";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:4000/api";
 
 function App() {
   const [token, setToken] = useState(
@@ -29,7 +29,9 @@ function App() {
   const [clientEmail, setClientEmail] =
     useState("");
 
-  const [message, setMessage] = useState("");
+  const [authMessage, setAuthMessage] = useState("");
+
+  const [clientMessage, setClientMessage] = useState("");
 
   function logout() {
     localStorage.removeItem("token");
@@ -37,21 +39,30 @@ function App() {
     setClients([]);
     setProjects([]);
     setSelectedClient("");
-    setMessage("");
+    setClientMessage("");
   }
 
   async function authFetch(path, options = {}) {
-    const response = await fetch(`${API_URL}${path}`, {
-      ...options,
-      headers: {
-        ...options.headers,
-        Authorization: `Bearer ${token}`
-      }
-    });
+    let response;
+
+    try {
+      response = await fetch(`${API_URL}${path}`, {
+        ...options,
+        headers: {
+          ...options.headers,
+          Authorization: `Bearer ${token}`
+        }
+      });
+    } catch (err) {
+      setClientMessage(
+        "Could not reach the server. Please check your connection and try again."
+      );
+      return null;
+    }
 
     if (response.status === 401) {
       logout();
-      setMessage("Your session has expired. Please log in again.");
+      setAuthMessage("Your session has expired. Please log in again.");
       return null;
     }
 
@@ -61,9 +72,12 @@ function App() {
   async function login(event) {
     event.preventDefault();
 
-    const response = await fetch(
-        `${API_URL}/login`,
-      {
+    setAuthMessage("");
+
+    let response;
+
+    try {
+      response = await fetch(`${API_URL}/login`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json"
@@ -72,13 +86,18 @@ function App() {
           email,
           password
         })
-      }
-    );
+      });
+    } catch (err) {
+      setAuthMessage(
+        "Could not reach the server. Please check your connection and try again."
+      );
+      return;
+    }
 
     const result = await response.json();
 
     if (!response.ok) {
-      setMessage(result.message);
+      setAuthMessage(result.message);
       return;
     }
 
@@ -135,11 +154,11 @@ function App() {
     const result = await response.json();
 
     if (!response.ok) {
-      setMessage(result.message);
+      setClientMessage(result.message);
       return;
     }
 
-    setMessage("Client added successfully");
+    setClientMessage("Client added successfully");
 
     setClientName("");
     setClientEmail("");
@@ -158,9 +177,13 @@ function App() {
 
     const result = await response.json();
 
-    setMessage(result.message);
+    setClientMessage(result.message);
 
     if (response.ok) {
+      if (id === selectedClient) {
+        setSelectedClient("");
+      }
+
       loadClients();
     }
   }
@@ -204,9 +227,9 @@ function App() {
             </button>
           </form>
 
-          {message && (
+          {authMessage && (
             <p className="message">
-              {message}
+              {authMessage}
             </p>
           )}
         </div>
@@ -248,9 +271,9 @@ function App() {
           </button>
         </form>
 
-        {message && (
+        {clientMessage && (
           <p className="message">
-            {message}
+            {clientMessage}
           </p>
         )}
       </div>
