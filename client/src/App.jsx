@@ -31,6 +31,33 @@ function App() {
 
   const [message, setMessage] = useState("");
 
+  function logout() {
+    localStorage.removeItem("token");
+    setToken(null);
+    setClients([]);
+    setProjects([]);
+    setSelectedClient("");
+    setMessage("");
+  }
+
+  async function authFetch(path, options = {}) {
+    const response = await fetch(`${API_URL}${path}`, {
+      ...options,
+      headers: {
+        ...options.headers,
+        Authorization: `Bearer ${token}`
+      }
+    });
+
+    if (response.status === 401) {
+      logout();
+      setMessage("Your session has expired. Please log in again.");
+      return null;
+    }
+
+    return response;
+  }
+
   async function login(event) {
     event.preventDefault();
 
@@ -60,14 +87,11 @@ function App() {
   }
 
   async function loadClients() {
-    const response = await fetch(
-      `${API_URL}/clients`,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const response = await authFetch("/clients");
+
+    if (!response) {
+      return;
+    }
 
     const result = await response.json();
 
@@ -75,14 +99,15 @@ function App() {
   }
 
   async function loadProjects() {
-    const url = selectedClient
-      ? `${API_URL}/projects?clientId=${selectedClient}`
-      : `${API_URL}/projects`;
+    const path = selectedClient
+      ? `/projects?clientId=${selectedClient}`
+      : "/projects";
 
-    const response = await fetch(url, { headers: {
-        Authorization: `Bearer ${token}`
-      }
-    });
+    const response = await authFetch(path);
+
+    if (!response) {
+      return;
+    }
 
     const result = await response.json();
 
@@ -92,20 +117,20 @@ function App() {
   async function addClient(event) {
     event.preventDefault();
 
-    const response = await fetch(
-      `${API_URL}/clients`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({
-          name: clientName,
-          email: clientEmail
-        })
-      }
-    );
+    const response = await authFetch("/clients", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        name: clientName,
+        email: clientEmail
+      })
+    });
+
+    if (!response) {
+      return;
+    }
 
     const result = await response.json();
 
@@ -123,15 +148,13 @@ function App() {
   }
 
   async function deleteClient(id) {
-    const response = await fetch(
-      `${API_URL}/clients/${id}`,
-      {
-        method: "DELETE",
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      }
-    );
+    const response = await authFetch(`/clients/${id}`, {
+      method: "DELETE"
+    });
+
+    if (!response) {
+      return;
+    }
 
     const result = await response.json();
 
@@ -193,7 +216,13 @@ function App() {
 
   return (
     <div className="container">
-      <h1>VIEK Client Management</h1>
+      <div className="header-row">
+        <h1>VIEK Client Management</h1>
+
+        <button type="button" onClick={logout}>
+          Logout
+        </button>
+      </div>
 
       <div className="card">
         <h2>Add Client</h2>
