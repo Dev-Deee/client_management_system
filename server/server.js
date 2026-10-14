@@ -1,9 +1,18 @@
+import "dotenv/config";
 import express from "express";
 import cors from "cors";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
 import { randomUUID } from "node:crypto";
 
 const app = express();
-const PORT = 4000;
+const PORT = process.env.PORT || 4000;
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+
+if (!JWT_SECRET) {
+  throw new Error("JWT_SECRET is not set. Add it to server/.env");
+}
 
 app.use(cors());
 app.use(express.json());
@@ -12,8 +21,8 @@ const users = [
   {
     id: randomUUID(),
     name: "Admin User",
-    email: "admin@viek.test",
-    password: "password123"
+    email: process.env.ADMIN_EMAIL,
+    passwordHash: bcrypt.hashSync(process.env.ADMIN_PASSWORD, 10)
   }
 ];
 
@@ -52,33 +61,52 @@ const projects = [
 app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
-  const user = users.find(
-    (item) =>
-      item.email === email &&
-      item.password === password
-  );
+  const user = users.find((item) => item.email === email);
 
-  if (!user) {
+  const passwordMatches =
+    user && bcrypt.compareSync(password, user.passwordHash);
+
+  if (!passwordMatches) {
     return res.status(401).json({
       message: "Invalid email or password"
     });
   }
 
+  const token = jwt.sign(
+    { sub: user.id, email: user.email },
+    JWT_SECRET,
+    { expiresIn: JWT_EXPIRES_IN }
+  );
+
+  const { passwordHash, ...publicUser } = user;
+
   res.json({
-    token: "demo-token",
-    user
+    token,
+    user: publicUser
   });
 });
 
 // Authentication middleware
 function authenticate(req, res, next) {
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers.authorization || "";
+  const token = authHeader.startsWith("Bearer ")
+    ? authHeader.slice("Bearer ".length)
+    : null;
 
-  if (authHeader !== "Bearer demo-token") {
+  if (!token) {
     return res.status(401).json({
       message: "Unauthorized"
     });
-  }next();
+  }
+
+  try {
+    req.user = jwt.verify(token, JWT_SECRET);
+    next();
+  } catch (err) {
+    return res.status(401).json({
+      message: "Invalid or expired token"
+    });
+  }
 }
 
 // Get clients
