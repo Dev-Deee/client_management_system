@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import { randomUUID } from "node:crypto";
 
 const app = express();
 const PORT = 4000;
@@ -9,7 +10,7 @@ app.use(express.json());
 
 const users = [
   {
-    id: 1,
+    id: randomUUID(),
     name: "Admin User",
     email: "admin@viek.test",
     password: "password123"
@@ -18,12 +19,12 @@ const users = [
 
 let clients = [
   {
-    id: 1,
+    id: randomUUID(),
     name: "Acme Limited",
     email: "contact@acme.test"
   },
   {
-    id: 2,
+    id: randomUUID(),
     name: "Bright Solutions",
     email: "hello@bright.test"
   }
@@ -31,18 +32,19 @@ let clients = [
 
 const projects = [
   {
-    id: 1,
+    id: randomUUID(),
     name: "Website Development",
-    clientId: 1},
-  {
-    id: 2,
-    name: "Mobile Application",
-    clientId: 2
+    clientId: clients[0].id
   },
   {
-    id: 3,
+    id: randomUUID(),
+    name: "Mobile Application",
+    clientId: clients[1].id
+  },
+  {
+    id: randomUUID(),
     name: "UI/UX Design",
-    clientId: 1
+    clientId: clients[0].id
   }
 ];
 
@@ -97,7 +99,7 @@ app.post("/api/clients", authenticate, (req, res) => {
   }
 
   const newClient = {
-    id: clients.length + 1,
+    id: randomUUID(),
     name,
     email
   };
