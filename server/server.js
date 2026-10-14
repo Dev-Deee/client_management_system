@@ -3,19 +3,33 @@ import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
+import rateLimit from "express-rate-limit";
 import { randomUUID } from "node:crypto";
 
 const app = express();
 const PORT = process.env.PORT || 4000;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_EXPIRES_IN = process.env.JWT_EXPIRES_IN || "1h";
+const CLIENT_ORIGIN = process.env.CLIENT_ORIGIN;
 
 if (!JWT_SECRET) {
   throw new Error("JWT_SECRET is not set. Add it to server/.env");
 }
 
-app.use(cors());
+if (!CLIENT_ORIGIN) {
+  throw new Error("CLIENT_ORIGIN is not set. Add it to server/.env");
+}
+
+app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
+
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  limit: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { message: "Too many login attempts. Try again later." }
+});
 
 const users = [
   {
@@ -58,7 +72,7 @@ const projects = [
 ];
 
 // Login
-app.post("/api/login", (req, res) => {
+app.post("/api/login", loginLimiter, (req, res) => {
   const { email, password } = req.body;
 
   const user = users.find((item) => item.email === email);
