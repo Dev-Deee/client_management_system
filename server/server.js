@@ -3,7 +3,6 @@ import express from "express";
 import cors from "cors";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
-import rateLimit from "express-rate-limit";
 import { randomUUID } from "node:crypto";
 
 const app = express();
@@ -22,14 +21,6 @@ if (!CLIENT_ORIGIN) {
 
 app.use(cors({ origin: CLIENT_ORIGIN }));
 app.use(express.json());
-
-const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  limit: 10,
-  standardHeaders: true,
-  legacyHeaders: false,
-  message: { message: "Too many login attempts. Try again later." }
-});
 
 const users = [
   {
@@ -53,7 +44,7 @@ let clients = [
   }
 ];
 
-const projects = [
+let projects = [
   {
     id: randomUUID(),
     name: "Website Development",
@@ -72,7 +63,7 @@ const projects = [
 ];
 
 // Login
-app.post("/api/login", loginLimiter, (req, res) => {
+app.post("/api/login", (req, res) => {
   const { email, password } = req.body;
 
   const user = users.find((item) => item.email === email);
@@ -140,6 +131,16 @@ app.post("/api/clients", authenticate, (req, res) => {
     });
   }
 
+  const emailTaken = clients.some(
+    (client) => client.email.toLowerCase() === email.toLowerCase()
+  );
+
+  if (emailTaken) {
+    return res.status(409).json({
+      message: "A client with this email already exists"
+    });
+  }
+
   const newClient = {
     id: randomUUID(),
     name,
@@ -167,6 +168,8 @@ app.delete("/api/clients/:id", authenticate, (req, res) => {
     return res.status(404).json({message: "Client not found"
     });
   }
+
+  projects = projects.filter((project) => project.clientId !== id);
 
   res.json({
     message: "Client deleted successfully"
