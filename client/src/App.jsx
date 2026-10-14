@@ -1,3 +1,4 @@
+import React from "react";    
 import { useEffect, useState } from "react";
 
 const API_URL = "http://localhost:4000/api";
@@ -17,7 +18,7 @@ function App() {
 
   const [clients, setClients] = useState([]);
 
-  const [projects, setProjects] = useState();
+  const [projects, setProjects] = useState([]);
 
   const [selectedClient, setSelectedClient] =
     useState("");
@@ -70,7 +71,7 @@ function App() {
 
     const result = await response.json();
 
-    setClients(result.clients);
+    setClients(result.data);
   }
 
   async function loadProjects() {
@@ -96,6 +97,7 @@ function App() {
       {
         method: "POST",
         headers: {
+          "Content-Type": "application/json",
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
