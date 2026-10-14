@@ -12,3 +12,5 @@ the 401s themselves were caused by a stale token left over in localStorage from 
 
 tried adding a client and got "Name and email are required" even though both fields were filled in. the addClient() fetch request in App.jsx was missing the Content-Type: application/json header, so express.json() never parsed the body and req.body came through empty on the server. added the header to the request in App.jsx
 
+looked at how new client ids were generated in server.js, id: clients.length + 1. this breaks once a client is deleted, since length no longer tracks the highest id used and can produce a duplicate id. it also doesn't scale well as the data grows. switched users, clients and projects to use randomUUID() from node:crypto instead, and updated the seed projects to reference the generated client ids. this also fixed a second bug where delete client never worked, because client.id was a number and req.params.id is always a string, so client.id !== id was always true
+
