@@ -15,18 +15,6 @@ body {
   margin: 40px auto;
 }
 
-.header-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 20px;
-}
-
-.header-row h1 {
-  margin: 0;
-}
-
 .card {
   background: #fff;
   padding: 24px;
@@ -70,4 +58,83 @@ li {
 
 .message {
   margin-top: 15px;
+}
+
+label {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+button {
+  background: #164e63;
+  color: white;
+}
+
+button:disabled {
+  opacity: .6;
+  cursor: wait;
+}
+
+input,
+select,
+button {
+  font: inherit;
+}
+
+:focus-visible {
+  outline: 3px solid #0891b2;
+  outline-offset: 3px;
+}
+
+.message {
+  padding: 12px;
+  background: #e0f2fe;
+  border-radius: 5px;
+  overflow-wrap: anywhere;
+}
+
+li {
+  align-items: center;
+  flex-wrap: wrap;
+  overflow-wrap: anywhere;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+select {
+  width: 100%;
+}
+
+@media (max-width: 600px) {
+  header {
+    align-items: flex-start;
+  }
+
+  h1 {
+    font-size: 1.6rem;
+  }
+
+  .card {
+    padding: 18px;
+  }
+
+  li span {
+    width: 100%;
+  }
 }
